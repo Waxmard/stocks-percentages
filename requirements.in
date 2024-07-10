@@ -1,0 +1,5 @@
+# prereqs
+pip-tools
+pyproject-hooks
+#
+python-dotenv
