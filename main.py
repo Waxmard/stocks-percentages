@@ -15,8 +15,11 @@ MOTLEY_ALLOCATION = float(os.getenv("MOTLEY_ALLOCATION"))
 TED_ALLOCATION = float(os.getenv("TED_ALLOCATION"))
 ME_ALLOCATION = float(os.getenv("ME_ALLOCATION"))
 
-# New constant for stock limit
+# Constants for stock limit and minimum dollar amount
 STOCK_LIMIT = int(os.getenv("STOCK_LIMIT", "0"))  # Default to 0 (no limit) if not set
+MIN_DOLLAR_AMOUNT = float(
+    os.getenv("MIN_DOLLAR_AMOUNT", "0")
+)  # Default to 0 (no minimum) if not set
 
 
 def allocate_stocks(stocks, total_percentage, ratio):
@@ -71,28 +74,48 @@ def print_allocations(allocations, total_amount):
     print(f"Total:        | {total_percentage:>9.2f}% | ${total_dollars:>11.2f}")
 
 
-def limit_and_reallocate(allocations, limit, ratio):
+def limit_and_reallocate(allocations, limit, ratio, total_amount, min_dollar_amount):
     """
-    Limit the number of stocks and reallocate percentages to total 100%.
+    Limit the number of stocks, reallocate percentages to total 100%, and ensure minimum dollar amount.
 
     :param allocations: Dictionary of stock allocations
     :param limit: Maximum number of stocks to keep
     :param ratio: Ratio for geometric reallocation
+    :param total_amount: Total portfolio amount in dollars
+    :param min_dollar_amount: Minimum dollar amount for each stock
     :return: New dictionary of limited and reallocated stocks
     """
     if limit <= 0 or limit >= len(allocations):
-        return allocations
+        limit = len(allocations)
 
-    # Sort stocks by allocation percentage and keep only the top 'limit' stocks
-    top_stocks = sorted(allocations.items(), key=lambda x: x[1], reverse=True)[:limit]
+    # Sort stocks by allocation percentage
+    sorted_stocks = sorted(allocations.items(), key=lambda x: x[1], reverse=True)
 
-    # Reallocate to the top stocks using the same geometric ratio, but ensure total is 100%
-    stock_names = [stock for stock, _ in top_stocks]
-    weights = [ratio**i for i in range(len(stock_names))]
-    total_weight = sum(weights)
-    percentages = [weight / total_weight * 100 for weight in weights]
+    while len(sorted_stocks) > 1:  # Ensure we always keep at least one stock
+        # Keep only the top 'limit' stocks
+        top_stocks = sorted_stocks[:limit]
 
-    return dict(zip(stock_names, percentages))
+        # Reallocate to the top stocks using the same geometric ratio, ensuring total is 100%
+        stock_names = [stock for stock, _ in top_stocks]
+        weights = [ratio**i for i in range(len(stock_names))]
+        total_weight = sum(weights)
+        percentages = [weight / total_weight * 100 for weight in weights]
+
+        new_allocations = dict(zip(stock_names, percentages))
+
+        # Check if all stocks meet the minimum dollar amount
+        if all(
+            (percentage / 100 * total_amount) >= min_dollar_amount
+            for percentage in new_allocations.values()
+        ):
+            return new_allocations
+
+        # If not all stocks meet the minimum, reduce the limit and try again
+        limit -= 1
+        sorted_stocks = sorted_stocks[:limit]
+
+    # If we can't meet the minimum dollar amount for multiple stocks, just return the top stock with 100% allocation
+    return {sorted_stocks[0][0]: 100.0}
 
 
 def main():
@@ -112,9 +135,13 @@ def main():
         [motley_allocations, ted_allocations, me_allocations]
     )
 
-    # Apply stock limit and reallocate if necessary
+    # Apply stock limit, reallocate, and ensure minimum dollar amount
     final_allocations = limit_and_reallocate(
-        combined_allocations, STOCK_LIMIT, geometric_ratio
+        combined_allocations,
+        STOCK_LIMIT,
+        geometric_ratio,
+        total_amount,
+        MIN_DOLLAR_AMOUNT,
     )
 
     # Print final allocations
