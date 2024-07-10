@@ -15,6 +15,9 @@ MOTLEY_ALLOCATION = float(os.getenv("MOTLEY_ALLOCATION"))
 TED_ALLOCATION = float(os.getenv("TED_ALLOCATION"))
 ME_ALLOCATION = float(os.getenv("ME_ALLOCATION"))
 
+# New constant for stock limit
+STOCK_LIMIT = int(os.getenv("STOCK_LIMIT", "0"))  # Default to 0 (no limit) if not set
+
 
 def allocate_stocks(stocks, total_percentage, ratio):
     """
@@ -68,6 +71,30 @@ def print_allocations(allocations, total_amount):
     print(f"Total:        | {total_percentage:>9.2f}% | ${total_dollars:>11.2f}")
 
 
+def limit_and_reallocate(allocations, limit, ratio):
+    """
+    Limit the number of stocks and reallocate percentages to total 100%.
+
+    :param allocations: Dictionary of stock allocations
+    :param limit: Maximum number of stocks to keep
+    :param ratio: Ratio for geometric reallocation
+    :return: New dictionary of limited and reallocated stocks
+    """
+    if limit <= 0 or limit >= len(allocations):
+        return allocations
+
+    # Sort stocks by allocation percentage and keep only the top 'limit' stocks
+    top_stocks = sorted(allocations.items(), key=lambda x: x[1], reverse=True)[:limit]
+
+    # Reallocate to the top stocks using the same geometric ratio, but ensure total is 100%
+    stock_names = [stock for stock, _ in top_stocks]
+    weights = [ratio**i for i in range(len(stock_names))]
+    total_weight = sum(weights)
+    percentages = [weight / total_weight * 100 for weight in weights]
+
+    return dict(zip(stock_names, percentages))
+
+
 def main():
     """
     Main function to run the stock allocation program.
@@ -85,8 +112,13 @@ def main():
         [motley_allocations, ted_allocations, me_allocations]
     )
 
-    # Print combined allocations
-    print_allocations(combined_allocations, total_amount)
+    # Apply stock limit and reallocate if necessary
+    final_allocations = limit_and_reallocate(
+        combined_allocations, STOCK_LIMIT, geometric_ratio
+    )
+
+    # Print final allocations
+    print_allocations(final_allocations, total_amount)
 
 
 if __name__ == "__main__":
