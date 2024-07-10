@@ -5,21 +5,29 @@ from collections import defaultdict
 # Load environment variables
 load_dotenv()
 
-# Constants for stock lists
-MOTLEY = os.getenv("MOTLEY_STOCKS").split(",")
-TED = os.getenv("TED_STOCKS").split(",")
-ME = os.getenv("ME_STOCKS").split(",")
 
-# Constants for portfolio allocation
-MOTLEY_ALLOCATION = float(os.getenv("MOTLEY_ALLOCATION"))
-TED_ALLOCATION = float(os.getenv("TED_ALLOCATION"))
-ME_ALLOCATION = float(os.getenv("ME_ALLOCATION"))
+def get_stock_lists():
+    """
+    Retrieve all stock lists from environment variables.
+    """
+    stock_lists = {}
+    for key, value in os.environ.items():
+        if key.startswith("STOCK_LIST_"):
+            list_id = key.split("_")[-1]  # Extract the identifier (A, B, C, etc.)
+            stock_lists[list_id] = value.split(",")
+    return stock_lists
 
-# Constants for stock limit and minimum dollar amount
-STOCK_LIMIT = int(os.getenv("STOCK_LIMIT", "0"))  # Default to 0 (no limit) if not set
-MIN_DOLLAR_AMOUNT = float(
-    os.getenv("MIN_DOLLAR_AMOUNT", "0")
-)  # Default to 0 (no minimum) if not set
+
+def get_allocations():
+    """
+    Retrieve all allocation percentages from environment variables.
+    """
+    allocations = {}
+    for key, value in os.environ.items():
+        if key.startswith("ALLOCATION_"):
+            list_id = key.split("_")[-1]  # Extract the identifier (A, B, C, etc.)
+            allocations[list_id] = float(value)
+    return allocations
 
 
 def allocate_stocks(stocks, total_percentage, ratio):
@@ -28,7 +36,7 @@ def allocate_stocks(stocks, total_percentage, ratio):
 
     :param stocks: List of stock names
     :param total_percentage: Total percentage to allocate for this list
-    :param ratio: Ratio for the geometric sequence (default 0.8)
+    :param ratio: Ratio for the geometric sequence
     :return: Dictionary of stock names with their allocated percentages
     """
     weights = [ratio**i for i in range(len(stocks))]
@@ -88,14 +96,11 @@ def limit_and_reallocate(allocations, limit, ratio, total_amount, min_dollar_amo
     if limit <= 0 or limit >= len(allocations):
         limit = len(allocations)
 
-    # Sort stocks by allocation percentage
     sorted_stocks = sorted(allocations.items(), key=lambda x: x[1], reverse=True)
 
-    while len(sorted_stocks) > 1:  # Ensure we always keep at least one stock
-        # Keep only the top 'limit' stocks
+    while len(sorted_stocks) > 1:
         top_stocks = sorted_stocks[:limit]
 
-        # Reallocate to the top stocks using the same geometric ratio, ensuring total is 100%
         stock_names = [stock for stock, _ in top_stocks]
         weights = [ratio**i for i in range(len(stock_names))]
         total_weight = sum(weights)
@@ -103,18 +108,15 @@ def limit_and_reallocate(allocations, limit, ratio, total_amount, min_dollar_amo
 
         new_allocations = dict(zip(stock_names, percentages))
 
-        # Check if all stocks meet the minimum dollar amount
         if all(
             (percentage / 100 * total_amount) >= min_dollar_amount
             for percentage in new_allocations.values()
         ):
             return new_allocations
 
-        # If not all stocks meet the minimum, reduce the limit and try again
         limit -= 1
         sorted_stocks = sorted_stocks[:limit]
 
-    # If we can't meet the minimum dollar amount for multiple stocks, just return the top stock with 100% allocation
     return {sorted_stocks[0][0]: 100.0}
 
 
@@ -124,27 +126,52 @@ def main():
     """
     total_amount = float(os.getenv("TOTAL_AMOUNT"))
     geometric_ratio = float(os.getenv("GEOMETRIC_RATIO"))
+    stock_limit = int(os.getenv("STOCK_LIMIT", "0"))
+    min_dollar_amount = float(os.getenv("MIN_DOLLAR_AMOUNT", "0"))
 
-    # Allocate stocks for each list
-    motley_allocations = allocate_stocks(MOTLEY, MOTLEY_ALLOCATION, geometric_ratio)
-    ted_allocations = allocate_stocks(TED, TED_ALLOCATION, geometric_ratio)
-    me_allocations = allocate_stocks(ME, ME_ALLOCATION, geometric_ratio)
+    stock_lists = get_stock_lists()
+    allocations = get_allocations()
 
-    # Combine allocations
-    combined_allocations = combine_allocations(
-        [motley_allocations, ted_allocations, me_allocations]
-    )
+    # Check for mismatches
+    stock_list_ids = set(stock_lists.keys())
+    allocation_ids = set(allocations.keys())
 
-    # Apply stock limit, reallocate, and ensure minimum dollar amount
+    if stock_list_ids != allocation_ids:
+        missing_stocks = allocation_ids - stock_list_ids
+        missing_allocations = stock_list_ids - allocation_ids
+        error_message = (
+            "Mismatch between STOCK_LIST and ALLOCATION environment variables\n"
+        )
+        if missing_stocks:
+            error_message += (
+                f"Missing stock lists for allocations: {', '.join(missing_stocks)}\n"
+            )
+        if missing_allocations:
+            error_message += f"Missing allocations for stock lists: {', '.join(missing_allocations)}\n"
+        raise ValueError(error_message)
+
+    total_allocation = sum(allocations.values())
+    if abs(total_allocation - 100) > 0.01:
+        raise ValueError(
+            f"Sum of allocation percentages must equal 100, but it's {total_allocation}"
+        )
+
+    individual_allocations = []
+    for list_id, stocks in stock_lists.items():
+        individual_allocations.append(
+            allocate_stocks(stocks, allocations[list_id], geometric_ratio)
+        )
+
+    combined_allocations = combine_allocations(individual_allocations)
+
     final_allocations = limit_and_reallocate(
         combined_allocations,
-        STOCK_LIMIT,
+        stock_limit,
         geometric_ratio,
         total_amount,
-        MIN_DOLLAR_AMOUNT,
+        min_dollar_amount,
     )
 
-    # Print final allocations
     print_allocations(final_allocations, total_amount)
 
 
