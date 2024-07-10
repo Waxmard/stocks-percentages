@@ -7,38 +7,24 @@ load_dotenv()
 
 
 def get_stock_lists():
-    """
-    Retrieve all stock lists from environment variables.
-    """
     stock_lists = {}
     for key, value in os.environ.items():
         if key.startswith("STOCK_LIST_"):
-            list_id = key.split("_")[-1]  # Extract the identifier (A, B, C, etc.)
+            list_id = key.split("_")[-1]
             stock_lists[list_id] = value.split(",")
     return stock_lists
 
 
 def get_allocations():
-    """
-    Retrieve all allocation percentages from environment variables.
-    """
     allocations = {}
     for key, value in os.environ.items():
         if key.startswith("ALLOCATION_"):
-            list_id = key.split("_")[-1]  # Extract the identifier (A, B, C, etc.)
+            list_id = key.split("_")[-1]
             allocations[list_id] = float(value)
     return allocations
 
 
 def allocate_stocks(stocks, total_percentage, ratio):
-    """
-    Allocate percentages to stocks using a geometric sequence.
-
-    :param stocks: List of stock names
-    :param total_percentage: Total percentage to allocate for this list
-    :param ratio: Ratio for the geometric sequence
-    :return: Dictionary of stock names with their allocated percentages
-    """
     weights = [ratio**i for i in range(len(stocks))]
     total_weight = sum(weights)
     percentages = [weight / total_weight * total_percentage for weight in weights]
@@ -46,12 +32,6 @@ def allocate_stocks(stocks, total_percentage, ratio):
 
 
 def combine_allocations(allocations_list):
-    """
-    Combine multiple allocation dictionaries into a single dictionary.
-
-    :param allocations_list: List of allocation dictionaries
-    :return: Combined dictionary of stock names with their total allocated percentages
-    """
     combined = defaultdict(float)
     for allocations in allocations_list:
         for stock, percentage in allocations.items():
@@ -60,12 +40,6 @@ def combine_allocations(allocations_list):
 
 
 def print_allocations(allocations, total_amount):
-    """
-    Print the allocations for each stock, including rank, percentages and dollar amounts.
-
-    :param allocations: Dictionary of stock names with their allocated percentages
-    :param total_amount: Total portfolio amount in dollars
-    """
     print(f"Total Portfolio: ${total_amount:.2f}")
     print("\nRank | Stock | Allocation | Dollar Amount")
     print("---------------------------------------")
@@ -83,16 +57,6 @@ def print_allocations(allocations, total_amount):
 
 
 def limit_and_reallocate(allocations, limit, ratio, total_amount, min_dollar_amount):
-    """
-    Limit the number of stocks, reallocate percentages to total 100%, and ensure minimum dollar amount.
-
-    :param allocations: Dictionary of stock allocations
-    :param limit: Maximum number of stocks to keep
-    :param ratio: Ratio for geometric reallocation
-    :param total_amount: Total portfolio amount in dollars
-    :param min_dollar_amount: Minimum dollar amount for each stock
-    :return: New dictionary of limited and reallocated stocks
-    """
     if limit <= 0 or limit >= len(allocations):
         limit = len(allocations)
 
@@ -120,19 +84,7 @@ def limit_and_reallocate(allocations, limit, ratio, total_amount, min_dollar_amo
     return {sorted_stocks[0][0]: 100.0}
 
 
-def main():
-    """
-    Main function to run the stock allocation program.
-    """
-    total_amount = float(os.getenv("TOTAL_AMOUNT"))
-    geometric_ratio = float(os.getenv("GEOMETRIC_RATIO"))
-    stock_limit = int(os.getenv("STOCK_LIMIT", "0"))
-    min_dollar_amount = float(os.getenv("MIN_DOLLAR_AMOUNT", "0"))
-
-    stock_lists = get_stock_lists()
-    allocations = get_allocations()
-
-    # Check for mismatches
+def validate_inputs(stock_lists, allocations):
     stock_list_ids = set(stock_lists.keys())
     allocation_ids = set(allocations.keys())
 
@@ -155,6 +107,18 @@ def main():
         raise ValueError(
             f"Sum of allocation percentages must equal 100, but it's {total_allocation}"
         )
+
+
+def main():
+    total_amount = float(os.getenv("TOTAL_AMOUNT"))
+    geometric_ratio = float(os.getenv("GEOMETRIC_RATIO"))
+    stock_limit = int(os.getenv("STOCK_LIMIT", "0"))
+    min_dollar_amount = float(os.getenv("MIN_DOLLAR_AMOUNT", "0"))
+
+    stock_lists = get_stock_lists()
+    allocations = get_allocations()
+
+    validate_inputs(stock_lists, allocations)
 
     individual_allocations = []
     for list_id, stocks in stock_lists.items():
