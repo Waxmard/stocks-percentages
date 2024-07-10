@@ -1,0 +1,9 @@
+repos:
+-   repo: local
+    hooks:
+    -   id: unittests
+        name: run unittests
+        entry: python -m unittest discover -v
+        language: python
+        pass_filenames: false
+        always_run: true
