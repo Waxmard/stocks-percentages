@@ -9,7 +9,8 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Run the script:
+Create and set a `.env` file to match your preferences, use `.env.example` as a starting point.
+
 ```sh
 python main.py
 ```
