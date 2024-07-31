@@ -22,9 +22,13 @@ test: setup
 	@echo "Running tests..."
 	$(BIN)/python -m unittest discover -v
 
-run: setup
-	@echo "Running main script..."
-	$(BIN)/python main.py
+combined: setup
+	@echo "Running combined script..."
+	$(BIN)/python combined.py
+
+tiered: setup
+	@echo "Running tiered script..."
+	$(BIN)/python tiered.py
 
 update-requirements: setup
 	@echo "Updating requirements..."
