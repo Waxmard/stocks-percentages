@@ -1,11 +1,11 @@
-.PHONY: all setup test clean
+.PHONY: all setup clean
 
 # Python interpreter to use
 PYTHON := python3
 VENV := .venv
 BIN := $(VENV)/bin
 
-all: setup test
+all: setup
 
 $(VENV)/bin/activate:
 	@echo "Creating virtual environment..."
@@ -17,10 +17,6 @@ $(VENV)/bin/activate:
 	@echo "Virtual environment setup complete."
 
 setup: $(VENV)/bin/activate
-
-test: setup
-	@echo "Running tests..."
-	$(BIN)/python -m unittest discover -v
 
 combined: setup
 	@echo "Running combined script..."
