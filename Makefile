@@ -26,7 +26,7 @@ combined: setup
 	@echo "Running combined script..."
 	$(BIN)/python combined.py
 
-tiered: setup
+run: setup
 	@echo "Running tiered script..."
 	$(BIN)/python tiered.py
 
