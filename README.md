@@ -1,28 +1,37 @@
-# Personal ETF Creator
+# Robinhood Portfolio Optimizer and Investment Advisor
 
-This project allows you to create a personalized ETF (Exchange-Traded Fund) by allocating stocks from different tiers with custom weightings. It uses a geometric allocation strategy to distribute investments across selected stocks within each tier.
+This project is a sophisticated investment tool that integrates with your Robinhood account to optimize your portfolio and provide intelligent investment advice. It analyzes your current holdings, compares them to a customizable target allocation, and offers recommendations for both rebalancing your existing portfolio and allocating new investments.
 
-## Features
+## Overview
 
-- Define multiple stock tiers (ETF, Strong Buy, Buy, Moderate Buy)
-- Customize allocation percentages for each tier
-- Geometric allocation strategy for stock weighting within ordered tiers
-- Equal allocation for unordered tiers
-- Configurable geometric ratio for ordered allocations
+The Robinhood Portfolio Optimizer and Investment Advisor offers a comprehensive solution for managing your Robinhood investments:
 
-## Important Note: Stock Order Matters in Ordered Tiers!
+1. **Portfolio Analysis**: Fetches and analyzes your current Robinhood holdings in real-time.
+2. **Custom Allocation Strategy**: Allows you to define a personalized target allocation across multiple tiers of stocks (e.g., ETFs, Strong Buy, Buy, Moderate Buy).
+3. **Rebalancing Recommendations**: Compares your actual portfolio to your target allocation and suggests trades to bring them into alignment.
+4. **New Investment Advice**: Provides specific recommendations on how to invest new funds, taking into account your current holdings and target allocation.
+5. **Robinhood Integration**: Leverages the Robinhood API to fetch real-time data and potentially execute trades (if implemented).
 
-For tiers marked as ordered (e.g., ETF_ORDERED=true), the order of stocks is critically important for the allocation process. The geometric allocation strategy assigns higher weights to stocks listed earlier in the list. This means:
+This tool is designed for investors who want to maintain a specific portfolio allocation while taking advantage of Robinhood's platform. It's particularly useful for those who follow a tiered investment strategy, with different levels of conviction or types of investments.
 
-1. Stocks listed first will receive larger allocations.
-2. Changing the order of stocks can significantly alter the final allocation.
+## Key Features
 
-Always carefully consider the order when defining your stock lists for ordered tiers in the `.env` file.
+- **Robinhood API Integration**: Seamlessly connects with your Robinhood account to fetch current holdings and real-time stock prices.
+- **Customizable Allocation Strategy**:
+  - Define multiple stock tiers (e.g., ETF, Strong Buy, Buy, Moderate Buy) with custom allocations.
+  - Use a geometric allocation strategy for ordered tiers (e.g., for ETFs where order matters).
+  - Apply equal allocation for unordered tiers.
+- **Smart Investment Advice**:
+  - Provides recommendations for rebalancing your current portfolio.
+  - Offers guidance on allocating new investments based on your current holdings and target allocations.
+- **Real-time Portfolio Analysis**: Compares your actual Robinhood portfolio to your target allocations, highlighting discrepancies.
+- **Flexible Configuration**: Easily adjustable settings through a `.env` file, including Robinhood credentials and allocation preferences.
 
 ## Prerequisites
 
 - Python 3.12
 - make (usually pre-installed on macOS and Linux)
+- Robinhood account credentials
 
 ## Setup
 
@@ -34,130 +43,112 @@ Always carefully consider the order when defining your stock lists for ordered t
 
 2. Set up the project:
    ```sh
-   make setup
+   make install
    ```
-   This command creates a virtual environment and installs all necessary dependencies.
+   This command creates a virtual environment and installs all necessary dependencies, including the Robinhood API client.
 
-3. Create a `.env` file in the project root and configure your preferences. Use `.env.example` as a starting point:
+3. Create a `.env` file in the project root and configure your preferences and Robinhood credentials:
    ```sh
    cp .env.example .env
    ```
-   Edit the `.env` file to match your desired stock lists and allocations.
+   Edit the `.env` file to include your Robinhood username and password, along with your desired stock lists and allocations.
 
 ## Usage
 
-Run the tiered script to generate your personal ETF allocation:
+Activate the virtual environment:
+```sh
+source .venv/bin/activate
+```
+
+Run the advisor script, which will connect to your Robinhood account:
 ```sh
 make run
 ```
 
 ## Configuration
 
-Update the `.env` file with your specific settings. Here's an example configuration:
+Update the `.env` file with your specific settings and Robinhood credentials. Here's an example configuration:
 
 ```
-# ETF stocks (ordered)
-ETF=AVUV,IETC,BUG,XLV,SOXQ,IVV
-ETF_ALLOCATION=50
-ETF_ORDERED=true
+# ... [other configurations] ...
 
-# Strong buy stocks (unordered)
-STRONG_BUY=AMZN,MELI,TEVA,ZS,COST,PANW,ELF,CCJ,HAL
-STRONG_BUY_ALLOCATION=25
-STRONG_BUY_ORDERED=false
+# Robinhood credentials
+ROBINHOOD_USERNAME=your_email@example.com
+ROBINHOOD_PASSWORD=your_secure_password
 
-# Buy stocks (unordered)
-BUY=ONON,CHWY,MU,AMD,CEG
-BUY_ALLOCATION=15
-BUY_ORDERED=false
-
-# Moderate buy stocks (unordered)
-MODERATE_BUY=GMED,VLTO,SNOW,IBM,AAPL,CMG,HON
-MODERATE_BUY_ALLOCATION=10
-MODERATE_BUY_ORDERED=false
-
-# Investment amount
-TOTAL_AMOUNT=7000
-
-# Allocation parameters
-GEOMETRIC_RATIO=0.8
+# ... [other configurations] ...
 ```
+
+Ensure your Robinhood credentials are kept secure and never shared or committed to version control.
 
 ## Sample Output
 
-Here's a sample output illustrating the tiered allocation:
+Here's a sample output illustrating the tiered allocation and Robinhood-based investment advice:
 
 ```
-TOTAL Portfolio: $7000.00
+Fetching current holdings from Robinhood...
+Analyzing portfolio and comparing to target allocations...
 
-Rank | Stock | Allocation | Dollar Amount
+Rank | Stock | Target Allocation | Current Allocation | Difference
 ---------------------------------------
-   1 | AVUV   |     13.55% | $     948.69
-   2 | IETC   |     10.84% | $     758.96
-   3 | BUG    |      8.67% | $     607.16
-   4 | XLV    |      6.94% | $     485.73
-   5 | SOXQ   |      5.55% | $     388.59
-   6 | IVV    |      4.44% | $     310.87
-   7 | ONON   |      3.00% | $     210.00
-   8 | CHWY   |      3.00% | $     210.00
-   9 | MU     |      3.00% | $     210.00
-  10 | AMD    |      3.00% | $     210.00
-  11 | CEG    |      3.00% | $     210.00
-  12 | AMZN   |      2.78% | $     194.44
-  13 | MELI   |      2.78% | $     194.44
-  14 | TEVA   |      2.78% | $     194.44
-  15 | ZS     |      2.78% | $     194.44
-  16 | COST   |      2.78% | $     194.44
-  17 | PANW   |      2.78% | $     194.44
-  18 | ELF    |      2.78% | $     194.44
-  19 | CCJ    |      2.78% | $     194.44
-  20 | HAL    |      2.78% | $     194.44
-  21 | GMED   |      1.43% | $     100.00
-  22 | VLTO   |      1.43% | $     100.00
-  23 | SNOW   |      1.43% | $     100.00
-  24 | IBM    |      1.43% | $     100.00
-  25 | AAPL   |      1.43% | $     100.00
-  26 | CMG    |      1.43% | $     100.00
-  27 | HON    |      1.43% | $     100.00
----------------------------------------
-Total:        |    100.00% | $    7000.00
+   1 | IVV    |     19.34% |     18.50% |    -0.84%
+   2 | XLV    |     15.47% |     16.20% |    +0.73%
+   3 | AVUV   |     12.38% |     11.80% |    -0.58%
+   ... [truncated for brevity] ...
+
+Starting new investment allocation with $10000.00
+
+Allocating to zero positions:
+Allocated $33.25 to HAL (zero_position)
+Allocated $69.70 to WMT (zero_position)
+... [truncated for brevity] ...
+
+Final allocation plan (based on current Robinhood holdings):
+HAL: $178.83 (5 shares at $33.25 each)
+WMT: $69.70 (1 share at $69.70 each)
+... [truncated for brevity] ...
+
+Remaining unallocated amount: $27.75
+
+Robinhood API calls made: 15
 ```
 
-This output shows how the script allocates your portfolio across different tiers, with geometric allocation for ordered tiers and equal allocation for unordered tiers.
-
-## Development
-
-### Updating Requirements
-
-To update the project dependencies:
-```sh
-make update-requirements
-```
-
-### Linting
-
-To run linters and code formatters:
-```sh
-make lint
-```
-
-### Pre-commit Hooks
-
-This project uses pre-commit hooks to ensure code quality. To install the hooks:
-```sh
-make setup
-pre-commit install
-```
+This output demonstrates how the script analyzes your current Robinhood portfolio, compares it to your target allocations, and provides advice on new investments.
 
 ## Project Structure
 
-- `tiered.py`: The main script that generates the tiered ETF allocation
-- `combined.py`: An alternative script for combined allocation (if needed)
-- `requirements.in`: Direct project dependencies
-- `requirements.txt`: Pinned dependencies (generated from requirements.in)
-- `Makefile`: Defines common development tasks
-- `.env`: Configuration file for stock tiers and allocations (not in version control)
-- `.env.example`: Example configuration file
+```
+.
+├── Makefile
+├── README.md
+├── pyproject.toml
+└── src
+    └── advisor
+        ├── __init__.py
+        ├── allocate.py
+        ├── main.py
+        └── robinhood.py
+```
+
+- `src/advisor/main.py`: The main script that orchestrates the ETF allocation and Robinhood-based investment advice.
+- `src/advisor/allocate.py`: Contains functions for stock allocation calculations.
+- `src/advisor/robinhood.py`: Handles all interactions with the Robinhood API, including fetching holdings and prices.
+
+## Development
+
+To run the advisor and connect to Robinhood:
+```sh
+make run
+```
+
+To clean up generated files:
+```sh
+make clean
+```
+
+## Security Note
+
+This project requires your Robinhood credentials to function. Always ensure that your `.env` file is secure and never commit it to version control. Use secure practices when handling your financial credentials.
 
 ## Contributing
 
@@ -166,3 +157,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is open source and available under the [MIT License](LICENSE).
+
+## Disclaimer
+
+This software is for educational purposes only. It is not intended to provide investment advice. Always consult with a qualified financial advisor before making investment decisions. Use of this software to interact with your Robinhood account is at your own risk.
