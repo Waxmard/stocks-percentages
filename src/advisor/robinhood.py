@@ -105,8 +105,8 @@ def balance_priority_lists(allocation_plan, comparison, remaining_amount):
             if remaining_amount == 0:
                 break
 
-    logger.info(f"\nFinal allocation plan after balancing: {allocation_plan}")
-    logger.info(f"Remaining amount after balancing: ${remaining_amount:.2f}")
+    logger.debug(f"\nFinal allocation plan after balancing: {allocation_plan}")
+    logger.debug(f"Remaining amount after balancing: ${remaining_amount:.2f}")
     return allocation_plan, remaining_amount
 
 def allocate_new_investment():
@@ -143,7 +143,9 @@ def allocate_new_investment():
 
     logger.info("\nFinal allocation plan:")
     for ticker, amount in allocation_plan.items():
-        logger.info(f"{ticker}: ${amount:.2f}")
+        current_price = comparison[ticker]['price']
+        shares = int(amount / current_price)
+        logger.info(f"{ticker}: ${amount:.2f} ({shares} share{'' if shares == 1 else 's'} at ${current_price:.2f} each)")
 
     logger.info(f"\nRemaining unallocated amount: ${remaining_amount:.2f}")
 
