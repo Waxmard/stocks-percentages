@@ -36,6 +36,30 @@ def allocate_stocks(stocks, ratio):
     return dict(zip(stocks, percentages))
 
 
+def get_stock_allocations():
+    total_amount = float(os.getenv("TOTAL_AMOUNT"))
+    geometric_ratio = float(os.getenv("GEOMETRIC_RATIO"))
+    stock_lists = get_stock_lists()
+
+    total_allocations = {}
+    for category, (stocks, category_allocation, ordered) in stock_lists.items():
+        category_amount = total_amount * category_allocation
+
+        if ordered:
+            allocations = allocate_stocks(stocks, geometric_ratio)
+        else:
+            equal_percentage = 100 / len(stocks)
+            allocations = {stock: equal_percentage for stock in stocks}
+
+        for stock, percentage in allocations.items():
+            stock_allocation = (percentage / 100) * category_amount
+            if stock in total_allocations:
+                total_allocations[stock] += stock_allocation
+            else:
+                total_allocations[stock] = stock_allocation
+
+    return total_allocations
+
 def print_allocations(allocations, total_amount, title):
     print(f"\n{title}: ${total_amount:.2f}")
     print("\nRank | Stock | Allocation | Dollar Amount")
