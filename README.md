@@ -21,7 +21,7 @@ Always carefully consider the order when defining your stock lists for ordered t
 
 ## Prerequisites
 
-- Python 3.7+
+- Python 3.12
 - make (usually pre-installed on macOS and Linux)
 
 ## Setup

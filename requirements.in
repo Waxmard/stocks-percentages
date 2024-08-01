@@ -1,8 +1,0 @@
-# prereqs
-setuptools
-pip-tools
-pyproject_hooks
-#
-python-dotenv
-pre-commit
-pyyaml
