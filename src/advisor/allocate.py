@@ -1,8 +1,13 @@
 import os
+import logging
 from dotenv import load_dotenv
 
 load_dotenv(".env")
 
+# Set up logging
+log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+logging.basicConfig(level=log_level, format='%(message)s')
+logger = logging.getLogger(__name__)
 
 def get_stock_lists():
     return {
@@ -28,13 +33,11 @@ def get_stock_lists():
         ),
     }
 
-
 def allocate_stocks(stocks, ratio):
     weights = [ratio**i for i in range(len(stocks))]
     total_weight = sum(weights)
     percentages = [weight / total_weight * 100 for weight in weights]
     return dict(zip(stocks, percentages))
-
 
 def get_stock_allocations():
     total_amount = float(os.getenv("TOTAL_AMOUNT"))
@@ -60,22 +63,20 @@ def get_stock_allocations():
 
     return total_allocations
 
-def print_allocations(allocations, total_amount, title):
-    print(f"\n{title}: ${total_amount:.2f}")
-    print("\nRank | Stock | Allocation | Dollar Amount")
-    print("---------------------------------------")
+def print_allocations(allocations, total_amount):
+    logger.info("\nRank | Stock | Allocation | Dollar Amount")
+    logger.info("---------------------------------------")
     total_percentage = 0
     total_dollars = 0
     for rank, (stock, percentage) in enumerate(
         sorted(allocations.items(), key=lambda x: x[1], reverse=True), 1
     ):
         dollars = percentage / 100 * total_amount
-        print(f"{rank:4d} | {stock:<6} | {percentage:>9.2f}% | ${dollars:>11.2f}")
+        logger.info(f"{rank:4d} | {stock:<6} | {percentage:>9.2f}% | ${dollars:>11.2f}")
         total_percentage += percentage
         total_dollars += dollars
-    print("---------------------------------------")
-    print(f"Total:        | {total_percentage:>9.2f}% | ${total_dollars:>11.2f}")
-
+    logger.info("---------------------------------------")
+    logger.info(f"Total:        | {total_percentage:>9.2f}% | ${total_dollars:>11.2f}")
 
 def run():
     total_amount = float(os.getenv("TOTAL_AMOUNT"))
@@ -105,4 +106,4 @@ def run():
         for stock, amount in total_allocations.items()
     }
 
-    print_allocations(total_allocations, total_amount, "TOTAL Portfolio")
+    print_allocations(total_allocations, total_amount)
