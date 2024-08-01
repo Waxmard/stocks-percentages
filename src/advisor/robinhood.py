@@ -1,9 +1,15 @@
 import os
+import logging
 from dotenv import load_dotenv
 import robin_stocks.robinhood as r
 from advisor.allocate import get_stock_allocations, get_stock_lists
 
 load_dotenv(".env")
+
+# Set up logging
+log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+logging.basicConfig(level=log_level, format='%(message)s')
+logger = logging.getLogger(__name__)
 
 def login():
     r.login(os.getenv('ROBINHOOD_USERNAME'), os.getenv('ROBINHOOD_PASSWORD'))
@@ -33,10 +39,8 @@ def compare_allocations_to_positions():
 def get_priority_list(for_zero_positions=False):
     stock_lists = get_stock_lists()
     if for_zero_positions:
-        # For zero positions, ETFs are last
         categories = ['STRONG_BUY', 'BUY', 'MODERATE_BUY', 'ETF']
     else:
-        # For other operations, ETFs are first
         categories = ['ETF', 'STRONG_BUY', 'BUY', 'MODERATE_BUY']
     return [stock for category in categories for stock in stock_lists.get(category, [''])[0]]
 
@@ -59,11 +63,11 @@ def allocate_funds(stocks, comparison, remaining_amount, allocation_type):
             if amount_to_allocate > 0:
                 allocation_plan[ticker] = amount_to_allocate
                 remaining_amount -= amount_to_allocate
-                print(f"Allocated ${amount_to_allocate:.2f} to {ticker} ({allocation_type})")
+                logger.info(f"Allocated ${amount_to_allocate:.2f} to {ticker} ({allocation_type})")
             else:
-                print(f"No additional shares needed for {ticker}")
+                logger.debug(f"No additional shares needed for {ticker}")
         else:
-            print(f"Not enough funds to allocate to {ticker}")
+            logger.debug(f"Not enough funds to allocate to {ticker}")
             break
 
     return allocation_plan, remaining_amount
@@ -72,20 +76,20 @@ def balance_priority_lists(allocation_plan, comparison, remaining_amount):
     category_order = ['ETF', 'STRONG_BUY', 'BUY', 'MODERATE_BUY']
     category_max_values = {category: max((allocation_plan.get(ticker, 0) for ticker in comparison if get_stock_category(ticker) == category), default=0) for category in category_order}
 
-    print("\nBalancing priority lists:")
-    print("Initial allocation plan:", allocation_plan)
-    print(f"Remaining amount: ${remaining_amount:.2f}")
-    print("Maximum values per category:", category_max_values)
+    logger.info("\nBalancing priority lists:")
+    logger.debug(f"Initial allocation plan: {allocation_plan}")
+    logger.info(f"Remaining amount: ${remaining_amount:.2f}")
+    logger.debug(f"Maximum values per category: {category_max_values}")
 
     for i in range(len(category_order) - 1):
         higher_category, lower_category = category_order[i], category_order[i+1]
-        print(f"\nComparing {higher_category} with {lower_category}")
-        print(f"{higher_category} max: ${category_max_values[higher_category]:.2f}")
-        print(f"{lower_category} max: ${category_max_values[lower_category]:.2f}")
+        logger.debug(f"\nComparing {higher_category} with {lower_category}")
+        logger.debug(f"{higher_category} max: ${category_max_values[higher_category]:.2f}")
+        logger.debug(f"{lower_category} max: ${category_max_values[lower_category]:.2f}")
 
         if category_max_values[higher_category] <= category_max_values[lower_category]:
             difference = category_max_values[lower_category] - category_max_values[higher_category]
-            print(f"Need to add ${difference:.2f} to {higher_category} stocks")
+            logger.info(f"Need to add ${difference:.2f} to {higher_category} stocks")
 
             for ticker in allocation_plan:
                 if get_stock_category(ticker) == higher_category:
@@ -93,56 +97,54 @@ def balance_priority_lists(allocation_plan, comparison, remaining_amount):
                     allocation_plan[ticker] += amount_to_add
                     remaining_amount -= amount_to_add
                     category_max_values[higher_category] += amount_to_add
-                    print(f"Added ${amount_to_add:.2f} to {ticker}")
-                    print(f"New allocation for {ticker}: ${allocation_plan[ticker]:.2f}")
-                    print(f"Remaining amount: ${remaining_amount:.2f}")
+                    logger.info(f"Added ${amount_to_add:.2f} to {ticker}")
+                    logger.debug(f"New allocation for {ticker}: ${allocation_plan[ticker]:.2f}")
+                    logger.debug(f"Remaining amount: ${remaining_amount:.2f}")
                     break
 
             if remaining_amount == 0:
                 break
 
-    print("\nFinal allocation plan after balancing:", allocation_plan)
-    print(f"Remaining amount after balancing: ${remaining_amount:.2f}")
+    logger.info(f"\nFinal allocation plan after balancing: {allocation_plan}")
+    logger.info(f"Remaining amount after balancing: ${remaining_amount:.2f}")
     return allocation_plan, remaining_amount
 
 def allocate_new_investment():
     new_amount = float(os.getenv('NEW_AMOUNT', 0))
     comparison = compare_allocations_to_positions()
 
-    print(f"\nStarting new investment allocation with ${new_amount:.2f}")
-    print("\nAll stocks in comparison:", comparison)
+    logger.info(f"\nStarting new investment allocation with ${new_amount:.2f}")
+    logger.debug(f"All stocks in comparison: {comparison}")
 
-    # For zero positions, ETFs are prioritized last
     zero_position_priority_list = get_priority_list(for_zero_positions=True)
-    print("\nZero position priority list:", zero_position_priority_list)
+    logger.debug(f"Zero position priority list: {zero_position_priority_list}")
 
     zero_position_stocks = [ticker for ticker, data in comparison.items() if not data['owned']]
     sorted_zero_position_stocks = sorted(zero_position_stocks, key=lambda x: zero_position_priority_list.index(x) if x in zero_position_priority_list else len(zero_position_priority_list))
-    print("\nSorted zero position stocks:", sorted_zero_position_stocks)
+    logger.debug(f"Sorted zero position stocks: {sorted_zero_position_stocks}")
 
-    print("\nAllocating to zero positions:")
+    logger.info("\nAllocating to zero positions:")
     allocation_plan, remaining_amount = allocate_funds(sorted_zero_position_stocks, comparison, new_amount, 'zero_position')
 
-    print(f"\nRemaining amount after zero position allocation: ${remaining_amount:.2f}")
+    logger.info(f"\nRemaining amount after zero position allocation: ${remaining_amount:.2f}")
 
     allocation_plan, remaining_amount = balance_priority_lists(allocation_plan, comparison, remaining_amount)
 
     if remaining_amount > 0:
-        print("\nAllocating to underweight positions:")
-        # For underweight positions, ETFs are prioritized first
+        logger.debug("\nAllocating to underweight positions:")
         underweight_priority_list = get_priority_list(for_zero_positions=False)
         underweight_positions = sorted(
             [(ticker, data) for ticker, data in comparison.items() if data['difference'] > 0],
             key=lambda x: (underweight_priority_list.index(x[0]) if x[0] in underweight_priority_list else len(underweight_priority_list), -x[1]['difference'])
         )
-        print("Underweight positions:", underweight_positions)
+        logger.debug(f"Underweight positions: {underweight_positions}")
         underweight_allocation, remaining_amount = allocate_funds([ticker for ticker, _ in underweight_positions], comparison, remaining_amount, 'underweight')
         allocation_plan.update(underweight_allocation)
 
-    print("\nFinal allocation plan:")
+    logger.info("\nFinal allocation plan:")
     for ticker, amount in allocation_plan.items():
-        print(f"{ticker}: ${amount:.2f}")
+        logger.info(f"{ticker}: ${amount:.2f}")
 
-    print(f"\nRemaining unallocated amount: ${remaining_amount:.2f}")
+    logger.info(f"\nRemaining unallocated amount: ${remaining_amount:.2f}")
 
     return allocation_plan, remaining_amount
