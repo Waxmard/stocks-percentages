@@ -30,10 +30,15 @@ def compare_allocations_to_positions():
         } for ticker in all_tickers
     }
 
-def get_priority_list():
+def get_priority_list(for_zero_positions=False):
     stock_lists = get_stock_lists()
-    return [stock for category in ['ETF', 'STRONG_BUY', 'BUY', 'MODERATE_BUY']
-            for stock in stock_lists.get(category, [''])[0]]
+    if for_zero_positions:
+        # For zero positions, ETFs are last
+        categories = ['STRONG_BUY', 'BUY', 'MODERATE_BUY', 'ETF']
+    else:
+        # For other operations, ETFs are first
+        categories = ['ETF', 'STRONG_BUY', 'BUY', 'MODERATE_BUY']
+    return [stock for category in categories for stock in stock_lists.get(category, [''])[0]]
 
 def get_stock_category(ticker):
     stock_lists = get_stock_lists()
@@ -107,11 +112,12 @@ def allocate_new_investment():
     print(f"\nStarting new investment allocation with ${new_amount:.2f}")
     print("\nAll stocks in comparison:", comparison)
 
-    priority_list = get_priority_list()
-    print("\nPriority list:", priority_list)
+    # For zero positions, ETFs are prioritized last
+    zero_position_priority_list = get_priority_list(for_zero_positions=True)
+    print("\nZero position priority list:", zero_position_priority_list)
 
     zero_position_stocks = [ticker for ticker, data in comparison.items() if not data['owned']]
-    sorted_zero_position_stocks = sorted(zero_position_stocks, key=lambda x: priority_list.index(x) if x in priority_list else len(priority_list))
+    sorted_zero_position_stocks = sorted(zero_position_stocks, key=lambda x: zero_position_priority_list.index(x) if x in zero_position_priority_list else len(zero_position_priority_list))
     print("\nSorted zero position stocks:", sorted_zero_position_stocks)
 
     print("\nAllocating to zero positions:")
@@ -123,8 +129,12 @@ def allocate_new_investment():
 
     if remaining_amount > 0:
         print("\nAllocating to underweight positions:")
-        underweight_positions = sorted([(ticker, data) for ticker, data in comparison.items() if data['difference'] > 0],
-                                       key=lambda x: x[1]['difference'], reverse=True)
+        # For underweight positions, ETFs are prioritized first
+        underweight_priority_list = get_priority_list(for_zero_positions=False)
+        underweight_positions = sorted(
+            [(ticker, data) for ticker, data in comparison.items() if data['difference'] > 0],
+            key=lambda x: (underweight_priority_list.index(x[0]) if x[0] in underweight_priority_list else len(underweight_priority_list), -x[1]['difference'])
+        )
         print("Underweight positions:", underweight_positions)
         underweight_allocation, remaining_amount = allocate_funds([ticker for ticker, _ in underweight_positions], comparison, remaining_amount, 'underweight')
         allocation_plan.update(underweight_allocation)
