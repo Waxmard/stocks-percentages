@@ -12,24 +12,20 @@ $(VENV)/bin/activate:
 	$(PYTHON) -m venv $(VENV) || (echo "Failed to create virtual environment"; exit 1)
 	@echo "Upgrading pip..."
 	$(BIN)/python -m pip install --upgrade pip || (echo "Failed to upgrade pip"; exit 1)
-	@echo "Installing requirements..."
-	$(BIN)/pip install -r requirements.txt || (echo "Failed to install requirements"; exit 1)
+	@echo "Installing project and dependencies..."
+	$(BIN)/pip install -e ".[dev]" || (echo "Failed to install project and dependencies"; exit 1)
 	@echo "Virtual environment setup complete."
 
 setup: $(VENV)/bin/activate
-
-combined: setup
-	@echo "Running combined script..."
-	$(BIN)/python combined.py
 
 run: setup
 	@echo "Running tiered script..."
 	$(BIN)/python tiered.py
 
-update-requirements: setup
-	@echo "Updating requirements..."
+update-dependencies: setup
+	@echo "Updating dependencies..."
 	$(BIN)/pip install --upgrade pip-tools
-	$(BIN)/pip-compile requirements.in
+	$(BIN)/pip-compile pyproject.toml --output-file=requirements.txt
 	$(BIN)/pip-sync requirements.txt
 
 lint: setup
