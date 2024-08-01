@@ -14,5 +14,5 @@ if __name__ == "__main__":
     # print(compare_allocations_to_positions())
     # print()
 
-    print('allocate_new_investment')
     allocate_new_investment()
+    run()
