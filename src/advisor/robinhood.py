@@ -55,36 +55,23 @@ def compare_allocations_to_positions():
 
     return comparison
 
-def allocate_new_investment():
-    new_amount = float(os.getenv('NEW_AMOUNT', 0))
-    comparison = compare_allocations_to_positions()
+def get_priority_list():
     stock_lists = get_stock_lists()
-
-    # Flatten and prioritize stock lists
     priority_list = []
     for category in ['STRONG_BUY', 'BUY', 'MODERATE_BUY', 'ETF']:
         if category in stock_lists:
             priority_list.extend(stock_lists[category][0])
+    return priority_list
 
-    # Debug: Print all stocks in comparison
-    print("All stocks in comparison:")
-    for ticker, data in comparison.items():
-        print(f"{ticker}: {data}")
+def get_zero_position_stocks(comparison):
+    return [ticker for ticker, data in comparison.items() if not data['owned']]
 
-    # Stocks we don't own yet
-    zero_position_stocks = [ticker for ticker, data in comparison.items() if not data['owned']]
+def sort_zero_position_stocks(zero_position_stocks, priority_list):
+    return sorted(zero_position_stocks,
+                  key=lambda x: priority_list.index(x) if x in priority_list else len(priority_list))
 
-    # Debug: Print zero position stocks
-    print("\nZero position stocks:")
-    print(zero_position_stocks)
-
-    # Sort zero_position_stocks based on priority_list
-    zero_position_stocks.sort(key=lambda x: priority_list.index(x) if x in priority_list else len(priority_list))
-
+def allocate_to_zero_positions(zero_position_stocks, comparison, remaining_amount):
     allocation_plan = {}
-    remaining_amount = new_amount
-
-    # First, allocate to stocks we don't own
     for ticker in zero_position_stocks:
         price = comparison[ticker]['price']
         if remaining_amount >= price:
@@ -92,29 +79,55 @@ def allocate_new_investment():
             remaining_amount -= price
         else:
             break
+    return allocation_plan, remaining_amount
 
-    # If we have remaining amount, allocate to underweight positions
+def get_underweight_positions(comparison):
+    return sorted(
+        [(ticker, data) for ticker, data in comparison.items() if data['difference'] > 0],
+        key=lambda x: x[1]['difference'], reverse=True
+    )
+
+def allocate_to_underweight_positions(underweight_positions, comparison, remaining_amount):
+    allocation_plan = {}
+    for ticker, data in underweight_positions:
+        price = data['price']
+        difference = data['difference']
+
+        if remaining_amount >= price:
+            shares_to_buy = min(int(difference // price), int(remaining_amount // price))
+            if shares_to_buy > 0:
+                amount_to_allocate = shares_to_buy * price
+                allocation_plan[ticker] = amount_to_allocate
+                remaining_amount -= amount_to_allocate
+
+        if remaining_amount < min(price for ticker, data in comparison.items()):
+            break
+
+    return allocation_plan, remaining_amount
+
+def allocate_new_investment():
+    new_amount = float(os.getenv('NEW_AMOUNT', 0))
+    comparison = compare_allocations_to_positions()
+
+    print("All stocks in comparison:")
+    for ticker, data in comparison.items():
+        print(f"{ticker}: {data}")
+
+    priority_list = get_priority_list()
+    zero_position_stocks = get_zero_position_stocks(comparison)
+
+    print("\nZero position stocks:")
+    print(zero_position_stocks)
+
+    sorted_zero_position_stocks = sort_zero_position_stocks(zero_position_stocks, priority_list)
+
+    allocation_plan, remaining_amount = allocate_to_zero_positions(sorted_zero_position_stocks, comparison, new_amount)
+
     if remaining_amount > 0:
-        underweight_positions = sorted(
-            [(ticker, data) for ticker, data in comparison.items() if data['difference'] > 0],
-            key=lambda x: x[1]['difference'], reverse=True
-        )
+        underweight_positions = get_underweight_positions(comparison)
+        underweight_allocation, remaining_amount = allocate_to_underweight_positions(underweight_positions, comparison, remaining_amount)
+        allocation_plan.update(underweight_allocation)
 
-        for ticker, data in underweight_positions:
-            price = data['price']
-            difference = data['difference']
-
-            if remaining_amount >= price:
-                shares_to_buy = min(int(difference // price), int(remaining_amount // price))
-                if shares_to_buy > 0:
-                    amount_to_allocate = shares_to_buy * price
-                    allocation_plan[ticker] = allocation_plan.get(ticker, 0) + amount_to_allocate
-                    remaining_amount -= amount_to_allocate
-
-            if remaining_amount < min(price for ticker, data in comparison.items()):
-                break
-
-    # Debug: Print allocation plan
     print("\nAllocation plan:")
     for ticker, amount in allocation_plan.items():
         print(f"{ticker}: ${amount:.2f}")
