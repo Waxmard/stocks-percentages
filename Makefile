@@ -1,39 +1,36 @@
-.PHONY: all setup clean
+PYTHON := python3.12
+PIP := $(PYTHON) -m pip
+VENV_DIR := .venv
+VENV_ACTIVATE := $(VENV_DIR)/bin/activate
+SRC_DIR := src/advisor
 
-# Python interpreter to use
-PYTHON := python3
-VENV := .venv
-BIN := $(VENV)/bin
+.PHONY: install run clean help
 
-all: setup
+install:
+	@echo "Checking for virtual environment..."
+	@if [ ! -d "$(VENV_DIR)" ]; then \
+		echo "Creating virtual environment..."; \
+		$(PYTHON) -m venv $(VENV_DIR); \
+	fi
+	@echo "Installing dependencies..."
+	@. $(VENV_ACTIVATE) && $(PIP) install -e .
+	@echo "\nVirtual environment is ready. To activate it, run:"
+	@echo "source $(VENV_ACTIVATE)"
+	@echo "\nAfter activating, you can use 'make run' to execute the script."
 
-$(VENV)/bin/activate:
-	@echo "Creating virtual environment..."
-	$(PYTHON) -m venv $(VENV) || (echo "Failed to create virtual environment"; exit 1)
-	@echo "Upgrading pip..."
-	$(BIN)/python -m pip install --upgrade pip || (echo "Failed to upgrade pip"; exit 1)
-	@echo "Installing project and dependencies..."
-	$(BIN)/pip install -e ".[dev]" || (echo "Failed to install project and dependencies"; exit 1)
-	@echo "Virtual environment setup complete."
-
-setup: $(VENV)/bin/activate
-
-run: setup
-	@echo "Running tiered script..."
-	$(BIN)/python tiered.py
-
-update-dependencies: setup
-	@echo "Updating dependencies..."
-	$(BIN)/pip install --upgrade pip-tools
-	$(BIN)/pip-compile pyproject.toml --output-file=requirements.txt
-	$(BIN)/pip-sync requirements.txt
-
-lint: setup
-	@echo "Running linters..."
-	$(BIN)/pre-commit run --all-files
+run:
+	$(VENV_DIR)/bin/python $(SRC_DIR)/main.py
 
 clean:
 	@echo "Cleaning up..."
-	rm -rf $(VENV)
 	find . -type f -name '*.pyc' -delete
 	find . -type d -name '__pycache__' -delete
+	rm -rf *.egg-info
+	rm -rf build dist
+
+help:
+	@echo "Available targets:"
+	@echo "  install  - Create virtual environment (if needed) and install project dependencies"
+	@echo "  make run      : Run the advisor"
+	@echo "  clean    - Clean up generated files"
+	@echo "  help     - Show this help message"

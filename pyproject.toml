@@ -10,17 +10,10 @@ dependencies = [
     "python-dotenv",
     "pre-commit",
     "pyyaml",
+    "robin_stocks"
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pip-tools",
-    "setuptools",
-    "pyproject_hooks",
-]
-
-[tool.setuptools]
-packages = ["your_package_name"]
-
-[tool.pip-tools]
-generate-hashes = true
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["advisor*"]
+namespaces = false
