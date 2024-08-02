@@ -1,31 +1,14 @@
 # Robinhood Portfolio Optimizer and Investment Advisor
 
-This project is a sophisticated investment tool that integrates with your Robinhood account to optimize your portfolio and provide intelligent investment advice. It analyzes your current holdings, compares them to a customizable target allocation, and offers recommendations for both rebalancing your existing portfolio and allocating new investments.
+This project integrates with your Robinhood account to optimize your portfolio and provide investment advice. It analyzes your current holdings, compares them to a customizable target allocation, and offers recommendations for both rebalancing your existing portfolio and allocating new investments.
 
 ## Overview
-
-The Robinhood Portfolio Optimizer and Investment Advisor offers a comprehensive solution for managing your Robinhood investments:
 
 1. **Portfolio Analysis**: Fetches and analyzes your current Robinhood holdings in real-time.
 2. **Custom Allocation Strategy**: Allows you to define a personalized target allocation across multiple tiers of stocks (e.g., ETFs, Strong Buy, Buy, Moderate Buy).
 3. **Rebalancing Recommendations**: Compares your actual portfolio to your target allocation and suggests trades to bring them into alignment.
 4. **New Investment Advice**: Provides specific recommendations on how to invest new funds, taking into account your current holdings and target allocation.
 5. **Robinhood Integration**: Leverages the Robinhood API to fetch real-time data and potentially execute trades (if implemented).
-
-This tool is designed for investors who want to maintain a specific portfolio allocation while taking advantage of Robinhood's platform. It's particularly useful for those who follow a tiered investment strategy, with different levels of conviction or types of investments.
-
-## Key Features
-
-- **Robinhood API Integration**: Seamlessly connects with your Robinhood account to fetch current holdings and real-time stock prices.
-- **Customizable Allocation Strategy**:
-  - Define multiple stock tiers (e.g., ETF, Strong Buy, Buy, Moderate Buy) with custom allocations.
-  - Use a geometric allocation strategy for ordered tiers (e.g., for ETFs where order matters).
-  - Apply equal allocation for unordered tiers.
-- **Smart Investment Advice**:
-  - Provides recommendations for rebalancing your current portfolio.
-  - Offers guidance on allocating new investments based on your current holdings and target allocations.
-- **Real-time Portfolio Analysis**: Compares your actual Robinhood portfolio to your target allocations, highlighting discrepancies.
-- **Flexible Configuration**: Easily adjustable settings through a `.env` file, including Robinhood credentials and allocation preferences.
 
 ## Prerequisites
 
@@ -149,10 +132,6 @@ make clean
 ## Security Note
 
 This project requires your Robinhood credentials to function. Always ensure that your `.env` file is secure and never commit it to version control. Use secure practices when handling your financial credentials.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
